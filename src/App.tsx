@@ -18,6 +18,7 @@ import ManagerOverview from './pages/ManagerOverview'
 import PlatformConsole from './pages/PlatformConsole'
 import WorkspaceAccessRoute from './components/WorkspaceAccessRoute'
 import RegistrationPage from './pages/RegistrationPage'
+import OwnerWorkspaceSection from './pages/OwnerWorkspaceSection'
 import './index.css'
 
 function App() {
@@ -46,7 +47,7 @@ function App() {
             />
             <Route element={<WorkspaceAccessRoute role="owner" />}>
               <Route path="/owner" element={<OwnerOverview />} />
-              <Route path="/owner/*" element={<WorkspacePlaceholder />} />
+              <Route path="/owner/*" element={<OwnerWorkspaceSection />} />
             </Route>
             <Route element={<WorkspaceAccessRoute role="manager" />}>
               <Route path="/manager" element={<ManagerOverview />} />

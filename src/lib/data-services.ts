@@ -71,6 +71,18 @@ export type PlatformConsoleData = {
   auditLogs: Tables<'audit_logs'>[]
 }
 
+export type OwnerWorkspaceData = {
+  restaurant: Restaurant
+  orders: Tables<'orders'>[]
+  menuItems: MenuItem[]
+  categories: Tables<'menu_categories'>[]
+  payments: Tables<'payments'>[]
+  invitations: ManagerInvitation[]
+  roles: Tables<'roles'>[]
+  tables: Tables<'restaurant_tables'>[]
+  subscription: Tables<'subscriptions'> | null
+}
+
 export type WorkspaceRole = 'owner' | 'manager' | 'platform'
 
 export type AccountDestination =
@@ -202,6 +214,34 @@ export async function getOwnerDashboard(): Promise<OwnerDashboardData> {
     pendingPayments: pendingPayments.length,
     subscription,
     planName: subscriptionWithPlan?.subscription_plans?.name ?? null,
+  }
+}
+
+export async function getOwnerWorkspace(): Promise<OwnerWorkspaceData> {
+  const restaurants = await listMyRestaurants()
+  const restaurant = restaurants[0]
+  if (!restaurant) throw new Error('No restaurant workspace is assigned to this account')
+  const [orders, menuItems, categories, payments, invitations, roles, tables, subscription] = await Promise.all([
+    supabase.from('orders').select('*').eq('restaurant_id', restaurant.id).order('created_at', { ascending: false }).limit(100),
+    supabase.from('menu_items').select('*').eq('restaurant_id', restaurant.id).order('name'),
+    supabase.from('menu_categories').select('*').eq('restaurant_id', restaurant.id).order('sort_order'),
+    supabase.from('payments').select('*').eq('restaurant_id', restaurant.id).order('created_at', { ascending: false }).limit(100),
+    supabase.from('manager_invitations').select('*').eq('restaurant_id', restaurant.id).order('created_at', { ascending: false }),
+    supabase.from('roles').select('*').eq('restaurant_id', restaurant.id).order('name'),
+    supabase.from('restaurant_tables').select('*').eq('restaurant_id', restaurant.id).order('name'),
+    supabase.from('subscriptions').select('*').eq('restaurant_id', restaurant.id).order('created_at', { ascending: false }).limit(1).maybeSingle(),
+  ])
+  if (subscription.error) throw new Error(subscription.error.message)
+  return {
+    restaurant,
+    orders: requireData(orders.data, orders.error),
+    menuItems: requireData(menuItems.data, menuItems.error),
+    categories: requireData(categories.data, categories.error),
+    payments: requireData(payments.data, payments.error),
+    invitations: requireData(invitations.data, invitations.error),
+    roles: requireData(roles.data, roles.error),
+    tables: requireData(tables.data, tables.error),
+    subscription: subscription.data,
   }
 }
 
