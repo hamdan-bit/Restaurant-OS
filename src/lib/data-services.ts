@@ -273,6 +273,25 @@ export async function revokeQrCode(qrCodeId: string) {
   if (error) throw new Error(error.message)
 }
 
+export async function recordPhysicalPayment(
+  restaurantId: string,
+  orderId: string,
+  amount: number,
+  method: TablesInsert<'payments'>['method'],
+  providerReference?: string,
+) {
+  const { data, error } = await supabase.from('payments').insert({
+    restaurant_id: restaurantId,
+    order_id: orderId,
+    amount,
+    method,
+    provider_reference: providerReference?.trim() || null,
+    status: 'CONFIRMED',
+    confirmed_at: new Date().toISOString(),
+  }).select().single()
+  return requireData(data, error)
+}
+
 export async function saveMenuCategory(
   restaurantId: string,
   values: Pick<TablesInsert<'menu_categories'>, 'name' | 'description' | 'sort_order' | 'is_published'>,

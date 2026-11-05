@@ -1,7 +1,7 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import AppShell from '../components/AppShell'
-import { createQrCode, getOwnerWorkspace, inviteManager, removeManagerAccess, revokeManagerInvitation, revokeQrCode, saveMenuCategory, saveMenuItem, saveRestaurantSettings, saveRestaurantTable, saveSeat, updateManagerInvitation, type OwnerWorkspaceData } from '../lib/data-services'
+import { createQrCode, getOwnerWorkspace, inviteManager, recordPhysicalPayment, removeManagerAccess, revokeManagerInvitation, revokeQrCode, saveMenuCategory, saveMenuItem, saveRestaurantSettings, saveRestaurantTable, saveSeat, updateManagerInvitation, type OwnerWorkspaceData } from '../lib/data-services'
 import QRCode from 'qrcode'
 import { EmptyState } from './StatePage'
 import './OwnerWorkspaceSection.css'
@@ -43,19 +43,47 @@ export default function OwnerWorkspaceSection() {
 }
 
 function OwnerSectionContent({ data, section, onSaved }: { data: OwnerWorkspaceData; section: string; onSaved: () => void }) {
-  const { restaurant, orders, payments, subscription } = data
+  const { restaurant, orders, subscription } = data
   const currency = restaurant.currency
   const heading = titleFromPath(`/owner/${section}`)
   if (section === 'orders') return <Section title={heading} description="Review recent customer orders and their current service status."><DataTable headers={['Reference', 'Type', 'Customer', 'Status', 'Total']} rows={orders.map((order) => [order.order_reference, order.order_type, order.customer_name ?? 'Walk-in', order.status, money(order.total, currency)])} empty="No orders have been placed yet." /></Section>
   if (section === 'menu') return <Section title={heading} description="Create categories and manage every menu item component."><MenuManager data={data} currency={currency} onSaved={onSaved} /></Section>
   if (section === 'tables') return <Section title={heading} description="Create tables and add seats for dine-in ordering."><TableManager data={data} onSaved={onSaved} /></Section>
   if (section === 'staff') return <Section title={heading} description="Invite staff by email, edit pending invitations, and remove restaurant access."><StaffManager data={data} onSaved={onSaved} /></Section>
-  if (section === 'payments') return <Section title={heading} description="Review restaurant payment records separately from platform subscription billing."><DataTable headers={['Order', 'Method', 'Amount', 'Status', 'Recorded']} rows={payments.map((payment) => [orders.find((order) => order.id === payment.order_id)?.order_reference ?? 'Unknown order', payment.method, money(payment.amount, currency), payment.status, new Date(payment.created_at).toLocaleDateString()])} empty="No restaurant payments recorded yet." /></Section>
+  if (section === 'payments') return <Section title={heading} description="Record and reconcile customer payments received by the restaurant."><PaymentManager data={data} currency={currency} onSaved={onSaved} /></Section>
   if (section === 'reports') return <Section title={heading} description="Analyze completed sales and download the underlying order ledger for spreadsheets."><ReportManager orders={orders} currency={currency} restaurantName={restaurant.name} /></Section>
   if (section === 'billing') return <Section title={heading} description="Subscription charges are separate from customer meal payments."><div className="owner-detail-card"><strong>{subscription ? 'Subscription active' : 'No subscription configured'}</strong><p>{subscription ? `Status: ${subscription.status}. Billing period ends ${subscription.current_period_end ? new Date(subscription.current_period_end).toLocaleDateString() : 'not set'}.` : 'Contact your platform administrator to configure a plan.'}</p></div></Section>
   if (section === 'qr-codes') return <Section title={heading} description="Generate, download, and revoke dine-in QR codes for tables and seats."><QrManager data={data} onSaved={onSaved} /></Section>
   if (section === 'settings') return <Section title={heading} description="Update the restaurant profile used by your workspace and public ordering page."><SettingsManager restaurant={restaurant} onSaved={onSaved} /></Section>
   return <Section title={heading} description="This owner workspace section is ready for its next workflow module." />
+}
+
+function PaymentManager({ data, currency, onSaved }: { data: OwnerWorkspaceData; currency: string; onSaved: () => void }) {
+  const [orderId, setOrderId] = useState('')
+  const [method, setMethod] = useState<'CASH' | 'MOBILE_MONEY' | 'CARD' | 'OTHER'>('CASH')
+  const [amount, setAmount] = useState('')
+  const [reference, setReference] = useState('')
+  const [filter, setFilter] = useState('ALL')
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const pendingOrders = data.orders.filter((order) => !data.payments.some((payment) => payment.order_id === order.id && payment.status === 'CONFIRMED') && !['COLLECTED', 'CANCELLED'].includes(order.status))
+  const confirmed = data.payments.filter((payment) => payment.status === 'CONFIRMED')
+  const visible = filter === 'ALL' ? data.payments : data.payments.filter((payment) => payment.status === filter)
+  const submit = async (event: FormEvent) => {
+    event.preventDefault(); setSaving(true); setError(null)
+    try {
+      const order = data.orders.find((item) => item.id === orderId)
+      if (!order) throw new Error('Select an order to record payment for.')
+      await recordPhysicalPayment(data.restaurant.id, orderId, Number(amount), method, reference)
+      setOrderId(''); setAmount(''); setReference(''); onSaved()
+    } catch (reason) { setError(reason instanceof Error ? reason.message : 'Unable to record payment.') } finally { setSaving(false) }
+  }
+  return <div className="owner-manager">
+    {error && <div className="owner-form-error">{error}</div>}
+    <div className="owner-stat-grid"><Stat label="Confirmed payments" value={confirmed.length} /><Stat label="Collected revenue" value={money(confirmed.reduce((sum, payment) => sum + payment.amount, 0), currency)} /><Stat label="Orders awaiting payment" value={pendingOrders.length} /></div>
+    <form className="owner-form-card" onSubmit={submit}><h2>Record customer payment</h2><div className="owner-form-grid"><label>Order<select required value={orderId} onChange={(event) => { setOrderId(event.target.value); const order = data.orders.find((item) => item.id === event.target.value); if (order) setAmount(String(order.total)) }}><option value="">Select unpaid order</option>{pendingOrders.map((order) => <option key={order.id} value={order.id}>{order.order_reference} · {money(order.total, currency)}</option>)}</select></label><label>Method<select value={method} onChange={(event) => setMethod(event.target.value as typeof method)}><option value="CASH">Cash</option><option value="MOBILE_MONEY">Mobile money</option><option value="CARD">Card</option><option value="OTHER">Other</option></select></label><label>Amount ({currency})<input required min="0.01" step="0.01" type="number" value={amount} onChange={(event) => setAmount(event.target.value)} /></label><label>Reference (optional)<input value={reference} onChange={(event) => setReference(event.target.value)} placeholder="Receipt or provider reference" /></label></div><div className="owner-form-actions"><button type="submit" disabled={saving || !orderId}>{saving ? 'Recording…' : 'Record payment'}</button></div></form>
+    <div className="owner-manager-list"><div className="owner-section-heading"><div><h2>Payment ledger</h2><span>Customer payments only; subscription billing is shown separately.</span></div><select value={filter} onChange={(event) => setFilter(event.target.value)}><option value="ALL">All statuses</option><option value="CONFIRMED">Confirmed</option><option value="PENDING">Pending</option><option value="FAILED">Failed</option><option value="REFUNDED">Refunded</option></select></div><DataTable headers={['Order', 'Method', 'Amount', 'Status', 'Recorded']} rows={visible.map((payment) => [data.orders.find((order) => order.id === payment.order_id)?.order_reference ?? 'Unknown order', payment.method, money(payment.amount, currency), payment.status, new Date(payment.created_at).toLocaleDateString()])} empty="No restaurant payments recorded yet." /></div>
+  </div>
 }
 
 function ReportManager({ orders, currency, restaurantName }: { orders: OwnerWorkspaceData['orders']; currency: string; restaurantName: string }) {
