@@ -59,7 +59,6 @@ function initials(email: string | undefined) {
 export default function AppShell({
   role = 'owner',
   workspaceName = 'Restaurant workspace',
-  workspaceLocation = 'Workspace',
   children,
 }: {
   role?: AppRole
@@ -67,6 +66,10 @@ export default function AppShell({
   workspaceLocation?: string
   children: ReactNode
 }) {
+  const [stableWorkspaceName, setStableWorkspaceName] = useState(() => {
+    const stored = window.localStorage.getItem('fairprice-workspace-name')
+    return stored || workspaceName
+  })
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     const stored = window.localStorage.getItem('fairprice-theme')
     return stored === 'dark' ? 'dark' : 'light'
@@ -77,6 +80,13 @@ export default function AppShell({
   useEffect(() => {
     document.documentElement.dataset.theme = theme
   }, [theme])
+
+  useEffect(() => {
+    if (workspaceName !== 'Restaurant workspace') {
+      setStableWorkspaceName(workspaceName)
+      window.localStorage.setItem('fairprice-workspace-name', workspaceName)
+    }
+  }, [workspaceName])
 
   const handleSignOut = async () => {
     await signOut()
@@ -94,24 +104,10 @@ export default function AppShell({
     <div className="app-shell">
       <header className="shell-header">
         <div className="shell-header-row">
-          <div className="shell-brand">
-          <Link to={role === 'platform' ? '/platform' : `/${role}`}>
-            <span className="brand-mark">F</span>
-            <span>
-              <strong>FairPrice</strong>
-              <small>Restaurant OS</small>
-            </span>
+          <Link className="workspace-switcher" to={role === 'platform' ? '/platform' : `/${role}`}>
+            <span className="workspace-avatar">{stableWorkspaceName.slice(0, 2).toUpperCase()}</span>
+            <strong>{stableWorkspaceName}</strong>
           </Link>
-          </div>
-          {role !== 'platform' && (
-            <div className="workspace-switcher">
-              <span className="workspace-avatar">{workspaceName.slice(0, 2).toUpperCase()}</span>
-              <span>
-                <strong>{workspaceName}</strong>
-                <small>{workspaceLocation}</small>
-              </span>
-            </div>
-          )}
           <div className="shell-user">
             <span className="user-avatar">{initials(user?.email)}</span>
             <span className="shell-user-details">
