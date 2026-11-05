@@ -17,6 +17,7 @@ import OwnerOverview from './pages/OwnerOverview'
 import ManagerOverview from './pages/ManagerOverview'
 import PlatformConsole from './pages/PlatformConsole'
 import WorkspaceAccessRoute from './components/WorkspaceAccessRoute'
+import RegistrationPage from './pages/RegistrationPage'
 import './index.css'
 
 function App() {
@@ -32,6 +33,7 @@ function App() {
 
           <Route element={<ProtectedRoute />}>
             <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/register" element={<RegistrationPage />} />
             <Route
               path="/application-status"
               element={
@@ -51,8 +53,7 @@ function App() {
               <Route path="/manager/*" element={<WorkspacePlaceholder role="manager" />} />
             </Route>
             <Route element={<WorkspaceAccessRoute role="platform" />}>
-              <Route path="/platform" element={<PlatformConsole />} />
-              <Route path="/platform/*" element={<WorkspacePlaceholder role="platform" />} />
+              <Route path="/platform/*" element={<PlatformConsole />} />
             </Route>
             <Route
               path="/restricted"

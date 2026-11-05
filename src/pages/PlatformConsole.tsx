@@ -54,7 +54,11 @@ function ConsoleContent({ data, refresh }: { data: PlatformConsoleData; refresh:
       : pathname.includes('/tenants') ? 'tenants'
         : pathname.includes('/plans') ? 'plans'
           : pathname.includes('/subscriptions') ? 'subscriptions'
-            : pathname.includes('/audit') ? 'audit' : 'overview'
+            : pathname.includes('/billing') ? 'billing'
+              : pathname.includes('/users') ? 'users'
+                : pathname.includes('/support') ? 'support'
+                  : pathname.includes('/health') ? 'health'
+                    : pathname.includes('/audit') ? 'audit' : 'overview'
   const pending = data.applications.filter((application) => ['PENDING_APPROVAL', 'MORE_INFORMATION_REQUIRED'].includes(application.status))
   const activeTenants = data.restaurants.filter((restaurant) => restaurant.status === 'ACTIVE').length
   const activeSubscriptions = data.subscriptions.filter((subscription) => ['TRIAL', 'ACTIVE', 'PAST_DUE', 'GRACE_PERIOD'].includes(subscription.status)).length
@@ -69,6 +73,10 @@ function ConsoleContent({ data, refresh }: { data: PlatformConsoleData; refresh:
     {view === 'tenants' && <Tenants data={data} />}
     {view === 'plans' && <Plans data={data} />}
     {view === 'subscriptions' && <Subscriptions data={data} />}
+    {view === 'billing' && <SectionState title="Billing and revenue" message="Platform subscription billing is connected to the hosted subscription ledger. Revenue reporting and invoice actions are the next platform module." />}
+    {view === 'users' && <SectionState title="Platform users" message="Platform users are protected by separate platform roles. User administration will be enabled here for Super Administrators." />}
+    {view === 'support' && <SectionState title="Support" message="Support requests and audited tenant access will be managed here. No tenant data is exposed from this placeholder." />}
+    {view === 'health' && <SectionState title="System health" message="Hosted service health monitoring will appear here as operational telemetry is connected." />}
     {view === 'audit' && <Audit data={data} />}
   </div>
 }
@@ -120,6 +128,10 @@ function Audit({ data }: { data: PlatformConsoleData }) {
 
 function Metric({ label, value, detail, tone }: { label: string; value: number | string; detail: string; tone: string }) {
   return <article className={`platform-metric ${tone}`}><span>{label}</span><strong>{value}</strong><small>{detail}</small></article>
+}
+
+function SectionState({ title, message }: { title: string; message: string }) {
+  return <section className="platform-section-state"><p className="platform-eyebrow">FAIRPRICE PLATFORM</p><h1>{title}</h1><p>{message}</p><span>Module foundation</span></section>
 }
 
 function PanelHeading({ label, title, to }: { label: string; title: string; to: string }) {

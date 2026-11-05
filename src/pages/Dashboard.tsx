@@ -31,7 +31,7 @@ export default function Dashboard() {
     return <StatePage title={status === 'REJECTED' ? 'Application not approved' : 'Application status'} message={message} action={{ label: 'Refresh status', to: '/dashboard' }} />
   }
   if (destination.kind === 'empty') {
-    return <StatePage title="No workspace yet" message="Your account is ready, but it is not linked to a restaurant workspace or application." action={{ label: 'Start a registration', to: '/signup' }} />
+    return <StatePage title="No workspace yet" message="Your account is ready, but it is not linked to a restaurant workspace or application." action={{ label: 'Register your restaurant', to: '/register' }} />
   }
   return <Navigate to={destination.path} replace />
 }

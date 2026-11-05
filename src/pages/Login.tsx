@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
+import { createAndSubmitRegistrationApplication } from '../lib/data-services'
 import './Auth.css'
 
 export default function Login() {
@@ -22,6 +23,24 @@ export default function Login() {
       setError(error.message)
       setLoading(false)
     } else {
+      const draft = localStorage.getItem('fairprice-registration-draft')
+      if (draft) {
+        try {
+          const parsed = JSON.parse(draft) as {
+            business_name: string
+            public_slug: string
+            owner_name: string
+            contact_email: string
+            contact_phone: string | null
+          }
+          await createAndSubmitRegistrationApplication(parsed)
+          localStorage.removeItem('fairprice-registration-draft')
+        } catch (registrationError: unknown) {
+          setError(registrationError instanceof Error ? registrationError.message : 'Account created, but registration could not be submitted.')
+          setLoading(false)
+          return
+        }
+      }
       navigate('/dashboard', { replace: true })
     }
   }
@@ -70,4 +89,3 @@ export default function Login() {
     </div>
   )
 }
-

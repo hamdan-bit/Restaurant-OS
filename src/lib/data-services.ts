@@ -113,6 +113,13 @@ export async function submitRegistrationApplication(applicationId: string) {
   if (error) throw new Error(error.message)
 }
 
+export async function createAndSubmitRegistrationApplication(
+  input: RegistrationApplicationInput,
+) {
+  const applicationId = await createRegistrationApplication(input)
+  await submitRegistrationApplication(applicationId)
+}
+
 export async function listMyRegistrationApplications(): Promise<
   RegistrationApplication[]
 > {
