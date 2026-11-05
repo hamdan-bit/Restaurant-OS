@@ -80,6 +80,7 @@ export type OwnerWorkspaceData = {
   invitations: ManagerInvitation[]
   roles: Tables<'roles'>[]
   tables: Tables<'restaurant_tables'>[]
+  seats: Tables<'seats'>[]
   subscription: Tables<'subscriptions'> | null
 }
 
@@ -221,7 +222,7 @@ export async function getOwnerWorkspace(): Promise<OwnerWorkspaceData> {
   const restaurants = await listMyRestaurants()
   const restaurant = restaurants[0]
   if (!restaurant) throw new Error('No restaurant workspace is assigned to this account')
-  const [orders, menuItems, categories, payments, invitations, roles, tables, subscription] = await Promise.all([
+  const [orders, menuItems, categories, payments, invitations, roles, tables, seats, subscription] = await Promise.all([
     supabase.from('orders').select('*').eq('restaurant_id', restaurant.id).order('created_at', { ascending: false }).limit(100),
     supabase.from('menu_items').select('*').eq('restaurant_id', restaurant.id).order('name'),
     supabase.from('menu_categories').select('*').eq('restaurant_id', restaurant.id).order('sort_order'),
@@ -229,6 +230,7 @@ export async function getOwnerWorkspace(): Promise<OwnerWorkspaceData> {
     supabase.from('manager_invitations').select('*').eq('restaurant_id', restaurant.id).order('created_at', { ascending: false }),
     supabase.from('roles').select('*').eq('restaurant_id', restaurant.id).order('name'),
     supabase.from('restaurant_tables').select('*').eq('restaurant_id', restaurant.id).order('name'),
+    supabase.from('seats').select('*').eq('restaurant_id', restaurant.id).order('name'),
     supabase.from('subscriptions').select('*').eq('restaurant_id', restaurant.id).order('created_at', { ascending: false }).limit(1).maybeSingle(),
   ])
   if (subscription.error) throw new Error(subscription.error.message)
@@ -241,8 +243,70 @@ export async function getOwnerWorkspace(): Promise<OwnerWorkspaceData> {
     invitations: requireData(invitations.data, invitations.error),
     roles: requireData(roles.data, roles.error),
     tables: requireData(tables.data, tables.error),
+    seats: requireData(seats.data, seats.error),
     subscription: subscription.data,
   }
+}
+
+export async function saveMenuCategory(
+  restaurantId: string,
+  values: Pick<TablesInsert<'menu_categories'>, 'name' | 'description' | 'sort_order' | 'is_published'>,
+  id?: string,
+) {
+  const query = id
+    ? supabase.from('menu_categories').update(values).eq('id', id)
+    : supabase.from('menu_categories').insert({ ...values, restaurant_id: restaurantId })
+  const { data, error } = await query.select().single()
+  return requireData(data, error)
+}
+
+export async function saveMenuItem(
+  restaurantId: string,
+  values: Pick<TablesInsert<'menu_items'>, 'category_id' | 'name' | 'description' | 'image_url' | 'price' | 'is_available' | 'is_published'>,
+  id?: string,
+  imageFile?: File,
+) {
+  const query = id
+    ? supabase.from('menu_items').update(values).eq('id', id)
+    : supabase.from('menu_items').insert({ ...values, restaurant_id: restaurantId })
+  const { data, error } = await query.select().single()
+  const item = requireData(data, error)
+  if (!imageFile) return item
+  const extension = imageFile.name.split('.').pop()?.toLowerCase() || 'jpg'
+  const path = `${restaurantId}/${item.id}/${crypto.randomUUID()}.${extension}`
+  const upload = await supabase.storage.from('menu-images').upload(path, imageFile, {
+    cacheControl: '3600',
+    contentType: imageFile.type,
+    upsert: false,
+  })
+  if (upload.error) throw new Error(upload.error.message)
+  const imageUrl = supabase.storage.from('menu-images').getPublicUrl(path).data.publicUrl
+  const updated = await supabase.from('menu_items').update({ image_url: imageUrl }).eq('id', item.id).select().single()
+  return requireData(updated.data, updated.error)
+}
+
+export async function saveRestaurantTable(
+  restaurantId: string,
+  values: Pick<TablesInsert<'restaurant_tables'>, 'name' | 'capacity' | 'is_active'>,
+  id?: string,
+) {
+  const query = id
+    ? supabase.from('restaurant_tables').update(values).eq('id', id)
+    : supabase.from('restaurant_tables').insert({ ...values, restaurant_id: restaurantId })
+  const { data, error } = await query.select().single()
+  return requireData(data, error)
+}
+
+export async function saveSeat(
+  restaurantId: string,
+  values: Pick<TablesInsert<'seats'>, 'table_id' | 'name' | 'is_active'>,
+  id?: string,
+) {
+  const query = id
+    ? supabase.from('seats').update(values).eq('id', id)
+    : supabase.from('seats').insert({ ...values, restaurant_id: restaurantId })
+  const { data, error } = await query.select().single()
+  return requireData(data, error)
 }
 
 export async function getManagerDashboard(): Promise<OwnerDashboardData> {
