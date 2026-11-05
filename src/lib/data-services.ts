@@ -81,6 +81,7 @@ export type OwnerWorkspaceData = {
   roles: Tables<'roles'>[]
   tables: Tables<'restaurant_tables'>[]
   seats: Tables<'seats'>[]
+  qrCodes: Tables<'qr_codes'>[]
   subscription: Tables<'subscriptions'> | null
 }
 
@@ -222,7 +223,7 @@ export async function getOwnerWorkspace(): Promise<OwnerWorkspaceData> {
   const restaurants = await listMyRestaurants()
   const restaurant = restaurants[0]
   if (!restaurant) throw new Error('No restaurant workspace is assigned to this account')
-  const [orders, menuItems, categories, payments, invitations, roles, tables, seats, subscription] = await Promise.all([
+  const [orders, menuItems, categories, payments, invitations, roles, tables, seats, qrCodes, subscription] = await Promise.all([
     supabase.from('orders').select('*').eq('restaurant_id', restaurant.id).order('created_at', { ascending: false }).limit(100),
     supabase.from('menu_items').select('*').eq('restaurant_id', restaurant.id).order('name'),
     supabase.from('menu_categories').select('*').eq('restaurant_id', restaurant.id).order('sort_order'),
@@ -231,6 +232,7 @@ export async function getOwnerWorkspace(): Promise<OwnerWorkspaceData> {
     supabase.from('roles').select('*').eq('restaurant_id', restaurant.id).order('name'),
     supabase.from('restaurant_tables').select('*').eq('restaurant_id', restaurant.id).order('name'),
     supabase.from('seats').select('*').eq('restaurant_id', restaurant.id).order('name'),
+    supabase.from('qr_codes').select('*').eq('restaurant_id', restaurant.id).order('created_at', { ascending: false }),
     supabase.from('subscriptions').select('*').eq('restaurant_id', restaurant.id).order('created_at', { ascending: false }).limit(1).maybeSingle(),
   ])
   if (subscription.error) throw new Error(subscription.error.message)
@@ -244,8 +246,31 @@ export async function getOwnerWorkspace(): Promise<OwnerWorkspaceData> {
     roles: requireData(roles.data, roles.error),
     tables: requireData(tables.data, tables.error),
     seats: requireData(seats.data, seats.error),
+    qrCodes: requireData(qrCodes.data, qrCodes.error),
     subscription: subscription.data,
   }
+
+}
+
+async function hashQrToken(token: string) {
+  const bytes = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(token))
+  return Array.from(new Uint8Array(bytes)).map((byte) => byte.toString(16).padStart(2, '0')).join('')
+}
+
+export async function createQrCode(restaurantId: string, tableId: string, seatId: string | null) {
+  const token = `${crypto.randomUUID()}-${crypto.randomUUID()}`
+  const { data, error } = await supabase.from('qr_codes').insert({
+    restaurant_id: restaurantId,
+    table_id: tableId,
+    seat_id: seatId,
+    token_hash: await hashQrToken(token),
+  }).select().single()
+  return { qrCode: requireData(data, error), token }
+}
+
+export async function revokeQrCode(qrCodeId: string) {
+  const { error } = await supabase.from('qr_codes').update({ is_active: false, revoked_at: new Date().toISOString() }).eq('id', qrCodeId)
+  if (error) throw new Error(error.message)
 }
 
 export async function saveMenuCategory(

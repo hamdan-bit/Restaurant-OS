@@ -1,7 +1,8 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import AppShell from '../components/AppShell'
-import { getOwnerWorkspace, inviteManager, removeManagerAccess, revokeManagerInvitation, saveMenuCategory, saveMenuItem, saveRestaurantSettings, saveRestaurantTable, saveSeat, updateManagerInvitation, type OwnerWorkspaceData } from '../lib/data-services'
+import { createQrCode, getOwnerWorkspace, inviteManager, removeManagerAccess, revokeManagerInvitation, revokeQrCode, saveMenuCategory, saveMenuItem, saveRestaurantSettings, saveRestaurantTable, saveSeat, updateManagerInvitation, type OwnerWorkspaceData } from '../lib/data-services'
+import QRCode from 'qrcode'
 import { EmptyState } from './StatePage'
 import './OwnerWorkspaceSection.css'
 
@@ -52,6 +53,7 @@ function OwnerSectionContent({ data, section, onSaved }: { data: OwnerWorkspaceD
   if (section === 'payments') return <Section title={heading} description="Review restaurant payment records separately from platform subscription billing."><DataTable headers={['Order', 'Method', 'Amount', 'Status', 'Recorded']} rows={payments.map((payment) => [orders.find((order) => order.id === payment.order_id)?.order_reference ?? 'Unknown order', payment.method, money(payment.amount, currency), payment.status, new Date(payment.created_at).toLocaleDateString()])} empty="No restaurant payments recorded yet." /></Section>
   if (section === 'reports') return <Section title={heading} description="Analyze completed sales and download the underlying order ledger for spreadsheets."><ReportManager orders={orders} currency={currency} restaurantName={restaurant.name} /></Section>
   if (section === 'billing') return <Section title={heading} description="Subscription charges are separate from customer meal payments."><div className="owner-detail-card"><strong>{subscription ? 'Subscription active' : 'No subscription configured'}</strong><p>{subscription ? `Status: ${subscription.status}. Billing period ends ${subscription.current_period_end ? new Date(subscription.current_period_end).toLocaleDateString() : 'not set'}.` : 'Contact your platform administrator to configure a plan.'}</p></div></Section>
+  if (section === 'qr-codes') return <Section title={heading} description="Generate, download, and revoke dine-in QR codes for tables and seats."><QrManager data={data} onSaved={onSaved} /></Section>
   if (section === 'settings') return <Section title={heading} description="Update the restaurant profile used by your workspace and public ordering page."><SettingsManager restaurant={restaurant} onSaved={onSaved} /></Section>
   return <Section title={heading} description="This owner workspace section is ready for its next workflow module." />
 }
@@ -88,6 +90,38 @@ function ReportManager({ orders, currency, restaurantName }: { orders: OwnerWork
     <div className="owner-report-card"><h2>Daily sales trend</h2>{trend.length ? <div className="sales-chart" aria-label="Daily completed sales chart">{trend.map(([day, value]) => <div className="sales-chart-column" key={day}><span className="sales-chart-value">{money(value.sales, currency)}</span><div className="sales-chart-bar" style={{ height: `${Math.max((value.sales / maxSales) * 170, 6)}px` }} /><small>{day.slice(5)}</small><em>{value.orders} order{value.orders === 1 ? '' : 's'}</em></div>)}</div> : <EmptyState title="No completed sales yet" message="Completed orders will appear here as sales are served or collected." />}</div>
     <div className="owner-report-card"><h2>Order status breakdown</h2><div className="report-status-grid">{[...statusCounts.entries()].map(([status, count]) => <div key={status}><strong>{count}</strong><span>{status.replaceAll('_', ' ')}</span></div>)}</div></div>
   </div>
+}
+
+function QrManager({ data, onSaved }: { data: OwnerWorkspaceData; onSaved: () => void }) {
+  const [tableId, setTableId] = useState(data.tables[0]?.id ?? '')
+  const [seatId, setSeatId] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [tokens, setTokens] = useState<Record<string, string>>({})
+  const create = async (event: FormEvent) => {
+    event.preventDefault(); setSaving(true); setError(null)
+    try {
+      const result = await createQrCode(data.restaurant.id, tableId, seatId || null)
+      setTokens((current) => ({ ...current, [result.qrCode.id]: result.token })); onSaved()
+    } catch (reason) { setError(reason instanceof Error ? reason.message : 'Unable to create QR code.') } finally { setSaving(false) }
+  }
+  const urlFor = (qr: OwnerWorkspaceData['qrCodes'][number]) => {
+    const token = tokens[qr.id]
+    return token ? `${window.location.origin}/r/${data.restaurant.public_slug}?qrToken=${encodeURIComponent(token)}&tableId=${qr.table_id ?? ''}&seatId=${qr.seat_id ?? ''}` : ''
+  }
+  const download = async (qr: OwnerWorkspaceData['qrCodes'][number]) => {
+    const url = urlFor(qr)
+    if (!url) { setError('This QR code was created before this browser session and cannot be downloaded. Revoke it and generate a replacement.'); return }
+    const dataUrl = await QRCode.toDataURL(url, { width: 720, margin: 2 })
+    const link = document.createElement('a'); link.href = dataUrl; link.download = `qr-${qr.table_id ?? 'table'}.png`; link.click()
+  }
+  const revoke = async (id: string) => {
+    setSaving(true); setError(null)
+    try { await revokeQrCode(id); onSaved() } catch (reason) { setError(reason instanceof Error ? reason.message : 'Unable to revoke QR code.') } finally { setSaving(false) }
+  }
+  const table = (id: string | null) => data.tables.find((item) => item.id === id)?.name ?? 'Unknown table'
+  const seat = (id: string | null) => data.seats.find((item) => item.id === id)?.name ?? 'All seats'
+  return <div className="owner-manager">{error && <div className="owner-form-error">{error}</div>}<form className="owner-form-card" onSubmit={create}><h2>Generate dine-in QR code</h2><div className="owner-form-grid"><label>Table<select required value={tableId} onChange={(event) => setTableId(event.target.value)}><option value="">Select table</option>{data.tables.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label><label>Seat (optional)<select value={seatId} onChange={(event) => setSeatId(event.target.value)}><option value="">All seats at this table</option>{data.seats.filter((item) => item.table_id === tableId).map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label></div><div className="owner-form-actions"><button type="submit" disabled={saving || !tableId}>{saving ? 'Generating…' : 'Generate QR code'}</button></div><small>Generate one table QR or a seat-specific QR. Keep QR tokens private because they authorize dine-in ordering context.</small></form><div className="owner-manager-list"><h2>QR inventory</h2>{data.qrCodes.length ? data.qrCodes.map((qr) => <div className="owner-list-row" key={qr.id}><span><strong>{table(qr.table_id)} · {seat(qr.seat_id)}</strong><small>{qr.is_active ? 'Active' : 'Revoked'} · created {new Date(qr.created_at).toLocaleDateString()}</small></span><div className="owner-row-actions">{qr.is_active && tokens[qr.id] && <button type="button" className="owner-secondary-button" onClick={() => download(qr)}>Download PNG</button>}{qr.is_active && <button type="button" className="owner-secondary-button" disabled={saving} onClick={() => revoke(qr.id)}>Revoke</button>}</div></div>) : <EmptyState title="No QR codes yet" message="Generate a QR code after creating tables and seats." />}</div></div>
 }
 
 function SettingsManager({ restaurant, onSaved }: { restaurant: OwnerWorkspaceData['restaurant']; onSaved: () => void }) {
