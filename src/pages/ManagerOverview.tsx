@@ -32,7 +32,7 @@ export default function ManagerOverview() {
   if (loading) return <AppShell role="manager"><div className="manager-loading">Loading live operations…</div></AppShell>
   if (!data || error) return <AppShell role="manager"><section className="manager-error"><h1>Operations unavailable</h1><p>{error ?? 'No restaurant workspace is assigned to this account.'}</p></section></AppShell>
 
-  return <AppShell role="manager"><ManagerContent data={data} /></AppShell>
+  return <AppShell role="manager" workspaceName={data.restaurant.name} workspaceLocation={data.restaurant.address ?? 'Restaurant workspace'}><ManagerContent data={data} /></AppShell>
 }
 
 function ManagerContent({ data }: { data: OwnerDashboardData }) {

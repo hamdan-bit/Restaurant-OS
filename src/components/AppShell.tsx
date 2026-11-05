@@ -58,9 +58,13 @@ function initials(email: string | undefined) {
 
 export default function AppShell({
   role = 'owner',
+  workspaceName = 'Restaurant workspace',
+  workspaceLocation = 'Workspace',
   children,
 }: {
   role?: AppRole
+  workspaceName?: string
+  workspaceLocation?: string
   children: ReactNode
 }) {
   const [mobileOpen, setMobileOpen] = useState(false)
@@ -102,10 +106,10 @@ export default function AppShell({
 
         {role !== 'platform' && (
           <div className="workspace-switcher">
-            <span className="workspace-avatar">ST</span>
+            <span className="workspace-avatar">{workspaceName.slice(0, 2).toUpperCase()}</span>
             <span>
-              <strong>Savanna Table</strong>
-              <small>Kampala, Uganda</small>
+              <strong>{workspaceName}</strong>
+              <small>{workspaceLocation}</small>
             </span>
           </div>
         )}
@@ -146,7 +150,7 @@ export default function AppShell({
             ☰
           </button>
           <span className="topbar-context">
-            {role === 'platform' ? 'FairPrice Platform' : 'Savanna Table'}
+            {role === 'platform' ? 'FairPrice Platform' : workspaceName}
           </span>
           <div className="topbar-actions">
             <button className="topbar-icon" aria-label="Notifications">

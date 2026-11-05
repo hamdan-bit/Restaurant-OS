@@ -108,6 +108,12 @@
   text-decoration: none;
 }
 
+.state-button {
+  border: 0;
+  cursor: pointer;
+  font: 700 12px var(--sans);
+}
+
 .prototype-badge {
   display: inline-block;
   margin-top: 20px;

@@ -187,7 +187,8 @@ export async function getOwnerDashboard(): Promise<OwnerDashboardData> {
   const activeTables = requireData(tablesResult.data, tablesResult.error)
   const activeSeats = requireData(seatsResult.data, seatsResult.error)
   const pendingPayments = requireData(paymentsResult.data, paymentsResult.error)
-  const subscription = requireData(subscriptionResult.data, subscriptionResult.error)
+  if (subscriptionResult.error) throw new Error(subscriptionResult.error.message)
+  const subscription = subscriptionResult.data
   const subscriptionWithPlan = subscription as (Tables<'subscriptions'> & {
     subscription_plans?: { name: string } | null
   }) | null

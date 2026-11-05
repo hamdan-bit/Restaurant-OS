@@ -5,7 +5,7 @@ import './StatePage.css'
 type StatePageProps = {
   title: string
   message: string
-  action?: { label: string; to: string }
+  action?: { label: string; to: string; onClick?: () => void }
   role?: AppRole
 }
 
@@ -29,7 +29,9 @@ export function StatePage({ title, message, action, role = 'owner' }: StatePageP
         <p className="state-eyebrow">FairPrice Restaurant OS</p>
         <h1>{title}</h1>
         <p>{message}</p>
-        {action && <Link className="state-action" to={action.to}>{action.label}</Link>}
+        {action && (action.onClick
+          ? <button className="state-action state-button" onClick={action.onClick}>{action.label}</button>
+          : <Link className="state-action" to={action.to}>{action.label}</Link>)}
       </section>
     </AppShell>
   )

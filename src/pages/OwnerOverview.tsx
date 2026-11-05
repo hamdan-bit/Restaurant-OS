@@ -32,7 +32,7 @@ export default function OwnerOverview() {
   if (loading) return <AppShell><div className="owner-loading">Loading restaurant overview…</div></AppShell>
   if (error || !data) return <AppShell><section className="owner-error"><h1>Overview unavailable</h1><p>{error ?? 'No restaurant workspace is available.'}</p></section></AppShell>
 
-  return <AppShell>
+  return <AppShell workspaceName={data.restaurant.name} workspaceLocation={data.restaurant.address ?? 'Restaurant workspace'}>
     <OwnerOverviewContent data={data} />
   </AppShell>
 }
