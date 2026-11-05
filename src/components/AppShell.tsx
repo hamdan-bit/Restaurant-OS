@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { Link, NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import './AppShell.css'
@@ -68,13 +68,27 @@ export default function AppShell({
   children: ReactNode
 }) {
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+    const stored = window.localStorage.getItem('fairprice-theme')
+    return stored === 'dark' ? 'dark' : 'light'
+  })
   const { user, signOut } = useAuth()
   const navigate = useNavigate()
   const nav = navigation[role]
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme
+  }, [theme])
 
   const handleSignOut = async () => {
     await signOut()
     navigate('/login', { replace: true })
+  }
+
+  const toggleTheme = () => {
+    const next = theme === 'light' ? 'dark' : 'light'
+    setTheme(next)
+    window.localStorage.setItem('fairprice-theme', next)
+    document.documentElement.dataset.theme = next
   }
 
   return (
@@ -153,6 +167,9 @@ export default function AppShell({
             {role === 'platform' ? 'FairPrice Platform' : workspaceName}
           </span>
           <div className="topbar-actions">
+            <button className="topbar-account" onClick={toggleTheme} aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}>
+              {theme === 'light' ? 'Dark mode' : 'Light mode'}
+            </button>
             <button className="topbar-icon" aria-label="Notifications">
               <span className="notification-dot" />
               ♢

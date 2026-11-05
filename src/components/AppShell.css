@@ -150,6 +150,14 @@
 .menu-toggle, .sidebar-close { display: none; }
 .shell-content { max-width: 1480px; margin: 0 auto; padding: 32px; }
 
+:root[data-theme='dark'] .app-shell { background: #14201b; color: #b6c4bd; }
+:root[data-theme='dark'] .shell-topbar { border-color: #30443a; background: rgba(20,32,27,.94); }
+:root[data-theme='dark'] .topbar-context { color: #edf5ef; }
+:root[data-theme='dark'] .topbar-icon,
+:root[data-theme='dark'] .topbar-account,
+:root[data-theme='dark'] .menu-toggle,
+:root[data-theme='dark'] .sidebar-close { border-color: #40584b; background: #1b2b23; color: #d3e2d9; }
+
 @media (max-width: 800px) {
   .app-sidebar { transform: translateX(-100%); transition: transform .2s ease; }
   .app-sidebar.is-open { transform: translateX(0); }

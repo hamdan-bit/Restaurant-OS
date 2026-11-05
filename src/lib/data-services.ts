@@ -309,6 +309,19 @@ export async function saveSeat(
   return requireData(data, error)
 }
 
+export async function saveRestaurantSettings(
+  restaurantId: string,
+  values: Pick<TablesInsert<'restaurants'>, 'name' | 'public_slug' | 'phone' | 'address' | 'timezone' | 'currency'>,
+) {
+  const { data, error } = await supabase
+    .from('restaurants')
+    .update(values)
+    .eq('id', restaurantId)
+    .select()
+    .single()
+  return requireData(data, error)
+}
+
 export async function getManagerDashboard(): Promise<OwnerDashboardData> {
   return getOwnerDashboard()
 }

@@ -1,7 +1,7 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import AppShell from '../components/AppShell'
-import { getOwnerWorkspace, inviteManager, removeManagerAccess, revokeManagerInvitation, saveMenuCategory, saveMenuItem, saveRestaurantTable, saveSeat, updateManagerInvitation, type OwnerWorkspaceData } from '../lib/data-services'
+import { getOwnerWorkspace, inviteManager, removeManagerAccess, revokeManagerInvitation, saveMenuCategory, saveMenuItem, saveRestaurantSettings, saveRestaurantTable, saveSeat, updateManagerInvitation, type OwnerWorkspaceData } from '../lib/data-services'
 import { EmptyState } from './StatePage'
 import './OwnerWorkspaceSection.css'
 
@@ -52,7 +52,7 @@ function OwnerSectionContent({ data, section, onSaved }: { data: OwnerWorkspaceD
   if (section === 'payments') return <Section title={heading} description="Review restaurant payment records separately from platform subscription billing."><DataTable headers={['Order', 'Method', 'Amount', 'Status', 'Recorded']} rows={payments.map((payment) => [orders.find((order) => order.id === payment.order_id)?.order_reference ?? 'Unknown order', payment.method, money(payment.amount, currency), payment.status, new Date(payment.created_at).toLocaleDateString()])} empty="No restaurant payments recorded yet." /></Section>
   if (section === 'reports') return <Section title={heading} description="Analyze completed sales and download the underlying order ledger for spreadsheets."><ReportManager orders={orders} currency={currency} restaurantName={restaurant.name} /></Section>
   if (section === 'billing') return <Section title={heading} description="Subscription charges are separate from customer meal payments."><div className="owner-detail-card"><strong>{subscription ? 'Subscription active' : 'No subscription configured'}</strong><p>{subscription ? `Status: ${subscription.status}. Billing period ends ${subscription.current_period_end ? new Date(subscription.current_period_end).toLocaleDateString() : 'not set'}.` : 'Contact your platform administrator to configure a plan.'}</p></div></Section>
-  if (section === 'settings') return <Section title={heading} description="Current tenant profile and public ordering identity."><div className="owner-detail-card"><strong>{restaurant.name}</strong><p>Public slug: {restaurant.public_slug}</p><p>Phone: {restaurant.phone ?? 'Not set'}</p><p>Address: {restaurant.address ?? 'Not set'}</p><p>Status: {restaurant.status}</p></div></Section>
+  if (section === 'settings') return <Section title={heading} description="Update the restaurant profile used by your workspace and public ordering page."><SettingsManager restaurant={restaurant} onSaved={onSaved} /></Section>
   return <Section title={heading} description="This owner workspace section is ready for its next workflow module." />
 }
 
@@ -88,6 +88,28 @@ function ReportManager({ orders, currency, restaurantName }: { orders: OwnerWork
     <div className="owner-report-card"><h2>Daily sales trend</h2>{trend.length ? <div className="sales-chart" aria-label="Daily completed sales chart">{trend.map(([day, value]) => <div className="sales-chart-column" key={day}><span className="sales-chart-value">{money(value.sales, currency)}</span><div className="sales-chart-bar" style={{ height: `${Math.max((value.sales / maxSales) * 170, 6)}px` }} /><small>{day.slice(5)}</small><em>{value.orders} order{value.orders === 1 ? '' : 's'}</em></div>)}</div> : <EmptyState title="No completed sales yet" message="Completed orders will appear here as sales are served or collected." />}</div>
     <div className="owner-report-card"><h2>Order status breakdown</h2><div className="report-status-grid">{[...statusCounts.entries()].map(([status, count]) => <div key={status}><strong>{count}</strong><span>{status.replaceAll('_', ' ')}</span></div>)}</div></div>
   </div>
+}
+
+function SettingsManager({ restaurant, onSaved }: { restaurant: OwnerWorkspaceData['restaurant']; onSaved: () => void }) {
+  const [name, setName] = useState(restaurant.name)
+  const [slug, setSlug] = useState(restaurant.public_slug)
+  const [phone, setPhone] = useState(restaurant.phone ?? '')
+  const [address, setAddress] = useState(restaurant.address ?? '')
+  const [timezone, setTimezone] = useState(restaurant.timezone)
+  const [currency, setCurrency] = useState(restaurant.currency)
+  const [saving, setSaving] = useState(false)
+  const [message, setMessage] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const submit = async (event: FormEvent) => {
+    event.preventDefault()
+    setSaving(true); setMessage(null); setError(null)
+    try {
+      await saveRestaurantSettings(restaurant.id, { name: name.trim(), public_slug: slug.trim().toLowerCase(), phone: phone.trim() || null, address: address.trim() || null, timezone: timezone.trim(), currency: currency.trim().toUpperCase() })
+      setMessage('Restaurant settings saved.')
+      onSaved()
+    } catch (reason) { setError(reason instanceof Error ? reason.message : 'Unable to save restaurant settings.') } finally { setSaving(false) }
+  }
+  return <form className="owner-form-card owner-settings-form" onSubmit={submit}>{error && <div className="owner-form-error">{error}</div>}{message && <div className="owner-form-success">{message}</div>}<div className="owner-form-grid"><label>Restaurant name<input required value={name} onChange={(event) => setName(event.target.value)} /></label><label>Public URL slug<input required pattern="[a-z0-9-]+" value={slug} onChange={(event) => setSlug(event.target.value.replace(/[^a-z0-9-]/g, '-'))} /></label><label>Phone<input type="tel" value={phone} onChange={(event) => setPhone(event.target.value)} /></label><label>Address<input value={address} onChange={(event) => setAddress(event.target.value)} /></label><label>Timezone<input required value={timezone} onChange={(event) => setTimezone(event.target.value)} /></label><label>Currency<input required maxLength={3} value={currency} onChange={(event) => setCurrency(event.target.value)} /></label></div><div className="owner-form-actions"><button type="submit" disabled={saving}>{saving ? 'Saving…' : 'Save settings'}</button></div><small>Restaurant status: {restaurant.status}. Status and approval are controlled by the platform.</small></form>
 }
 
 type ManagerPreset = 'FLOOR_MANAGER' | 'SHIFT_LEAD' | 'SENIOR_MANAGER'

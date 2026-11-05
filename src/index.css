@@ -28,6 +28,19 @@
   @media (max-width: 1024px) {
     font-size: 16px;
   }
+
+  :root[data-theme='dark'] {
+    --text: #b6c4bd;
+    --text-h: #edf5ef;
+    --bg: #14201b;
+    --border: #30443a;
+    --code-bg: #20332a;
+    --accent: #6fc39d;
+    --accent-bg: rgba(111, 195, 157, 0.14);
+    --accent-border: rgba(111, 195, 157, 0.55);
+    --social-bg: rgba(32, 51, 42, 0.7);
+    color-scheme: dark;
+  }
 }
 
 #root {
