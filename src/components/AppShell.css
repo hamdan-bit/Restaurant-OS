@@ -1,0 +1,171 @@
+.app-shell {
+  min-height: 100vh;
+  background: #f7f7f3;
+  color: #17231f;
+  font-family: 'DM Sans', var(--sans);
+}
+
+.app-sidebar {
+  position: fixed;
+  inset: 0 auto 0 0;
+  z-index: 20;
+  width: 256px;
+  padding: 22px 14px 16px;
+  display: flex;
+  flex-direction: column;
+  background: #0b2d25;
+  color: #dce7e2;
+}
+
+.shell-brand a {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #fff;
+  text-decoration: none;
+}
+
+.brand-mark {
+  display: grid;
+  width: 35px;
+  height: 35px;
+  place-items: center;
+  border-radius: 8px;
+  background: #e8ad35;
+  color: #0b2d25;
+  font: 800 20px 'Manrope', sans-serif;
+}
+
+.shell-brand strong,
+.shell-brand small,
+.workspace-switcher strong,
+.workspace-switcher small,
+.shell-user strong,
+.shell-user small {
+  display: block;
+}
+
+.shell-brand strong {
+  font: 700 18px/1 'Manrope', sans-serif;
+}
+
+.shell-brand small {
+  margin-top: 5px;
+  color: #8ca199;
+  font-size: 9px;
+  letter-spacing: .15em;
+  text-transform: uppercase;
+}
+
+.workspace-switcher {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin: 24px 2px 20px;
+  padding: 11px;
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 10px;
+  background: rgba(255,255,255,.07);
+}
+
+.workspace-avatar,
+.user-avatar {
+  display: grid;
+  flex: 0 0 auto;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border-radius: 50%;
+  background: #d9a33b;
+  color: #17372e;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.workspace-switcher strong { font-size: 12px; }
+.workspace-switcher small { margin-top: 2px; color: #8fa39b; font-size: 10px; }
+.nav-caption {
+  margin: 0 12px 9px;
+  color: #6f8a80;
+  font-size: 9px;
+  letter-spacing: .13em;
+  text-transform: uppercase;
+}
+
+.shell-nav {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  overflow: auto;
+}
+
+.shell-nav a {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 9px 11px;
+  border-radius: 7px;
+  color: #9eb0a9;
+  font-size: 12px;
+  text-decoration: none;
+}
+
+.shell-nav a:hover,
+.shell-nav a.active {
+  background: rgba(255,255,255,.09);
+  color: #fff;
+}
+
+.shell-nav a.active {
+  box-shadow: inset 3px 0 #e8ad35;
+}
+
+.nav-dot {
+  width: 7px;
+  height: 7px;
+  border: 1px solid currentColor;
+  border-radius: 2px;
+}
+
+.shell-user {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-top: 12px;
+  padding: 15px 7px 0;
+  border-top: 1px solid rgba(255,255,255,.1);
+}
+
+.shell-user strong { max-width: 165px; overflow: hidden; color: #f1f5f2; font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
+.shell-user small { margin-top: 2px; color: #789086; font-size: 9px; }
+.shell-main { min-height: 100vh; margin-left: 256px; }
+.shell-topbar { position: sticky; top: 0; z-index: 10; display: flex; height: 66px; align-items: center; padding: 0 32px; border-bottom: 1px solid #e4e8e4; background: rgba(255,255,255,.94); backdrop-filter: blur(8px); }
+.topbar-context { color: #26352f; font: 600 12px 'Manrope', sans-serif; }
+.topbar-actions { display: flex; align-items: center; gap: 10px; margin-left: auto; }
+.topbar-icon, .topbar-account, .menu-toggle, .sidebar-close { border: 1px solid #e4e8e4; border-radius: 7px; background: #fff; color: #55635d; cursor: pointer; }
+.topbar-icon { position: relative; width: 34px; height: 34px; font-size: 18px; }
+.notification-dot { position: absolute; top: 7px; right: 7px; width: 6px; height: 6px; border: 1px solid #fff; border-radius: 50%; background: #cf5a4e; }
+.topbar-account { padding: 8px 12px; font-size: 11px; }
+.menu-toggle, .sidebar-close { display: none; }
+.shell-content { max-width: 1480px; margin: 0 auto; padding: 32px; }
+
+@media (max-width: 800px) {
+  .app-sidebar { transform: translateX(-100%); transition: transform .2s ease; }
+  .app-sidebar.is-open { transform: translateX(0); }
+  .shell-main { margin-left: 0; }
+  .shell-topbar { padding: 0 20px; }
+  .menu-toggle, .sidebar-close { display: grid; width: 34px; height: 34px; place-items: center; }
+  .menu-toggle { margin-right: 12px; }
+  .sidebar-close { position: absolute; top: 22px; right: 14px; }
+  .shell-scrim { position: fixed; inset: 0; z-index: 19; border: 0; background: rgba(0,0,0,.4); }
+  .shell-content { padding: 24px 20px; }
+}
+
+@media (max-width: 480px) {
+  .shell-topbar { height: 58px; padding: 0 14px; }
+  .topbar-context { max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .topbar-account { padding: 7px 9px; font-size: 10px; }
+  .topbar-icon { width: 31px; height: 31px; }
+  .shell-content { padding: 18px 14px; }
+}

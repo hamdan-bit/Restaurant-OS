@@ -1,0 +1,127 @@
+.state-page,
+.workspace-placeholder {
+  max-width: 620px;
+  margin: 9vh auto;
+  padding: 42px;
+  border: 1px solid #e4e8e4;
+  border-radius: 14px;
+  background: #fff;
+  text-align: center;
+}
+
+.shared-state {
+  max-width: 620px;
+  margin: 40px auto;
+  padding: 38px 24px;
+  border: 1px solid #e4e8e4;
+  border-radius: 14px;
+  background: #fff;
+  text-align: center;
+}
+
+.shared-state p {
+  color: #68756f;
+  font-size: 13px;
+}
+
+.shared-state-empty h2 {
+  margin: 14px 0 7px;
+  color: #17231f;
+  font: 700 22px 'Manrope', sans-serif;
+}
+
+.empty-mark {
+  display: inline-grid;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  border-radius: 50%;
+  background: #f0eee5;
+  color: #8d805e;
+  font: 700 20px 'Manrope', sans-serif;
+}
+
+.shared-state-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 80px;
+}
+
+.loading-spinner {
+  width: 15px;
+  height: 15px;
+  border: 2px solid #d5e6db;
+  border-top-color: #2e7d61;
+  border-radius: 50%;
+  animation: state-spin .8s linear infinite;
+}
+
+@keyframes state-spin {
+  to { transform: rotate(360deg); }
+}
+
+.state-mark {
+  display: inline-grid;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  border-radius: 50%;
+  background: #dff1e8;
+  color: #2e7d61;
+  font: 700 22px 'Manrope', sans-serif;
+}
+
+.state-eyebrow {
+  margin: 18px 0 8px;
+  color: #628078;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .15em;
+  text-transform: uppercase;
+}
+
+.state-page h1,
+.workspace-placeholder h1 {
+  margin: 0 0 9px;
+  color: #17231f;
+  font: 700 28px 'Manrope', sans-serif;
+  letter-spacing: -.035em;
+}
+
+.state-page p:not(.state-eyebrow),
+.workspace-placeholder p:not(.state-eyebrow) {
+  color: #68756f;
+  font-size: 13px;
+}
+
+.state-action {
+  display: inline-block;
+  margin-top: 24px;
+  padding: 10px 15px;
+  border-radius: 7px;
+  background: #123d32;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.prototype-badge {
+  display: inline-block;
+  margin-top: 20px;
+  padding: 5px 8px;
+  border: 1px solid #e5e0ce;
+  border-radius: 5px;
+  background: #f0eee5;
+  color: #7f765d;
+  font-size: 10px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+@media (max-width: 560px) {
+  .state-page,
+  .workspace-placeholder { margin: 5vh auto; padding: 28px 20px; }
+}
