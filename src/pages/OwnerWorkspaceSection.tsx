@@ -1,7 +1,7 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import AppShell from '../components/AppShell'
-import { getOwnerWorkspace, saveMenuCategory, saveMenuItem, saveRestaurantTable, saveSeat, type OwnerWorkspaceData } from '../lib/data-services'
+import { getOwnerWorkspace, inviteManager, removeManagerAccess, revokeManagerInvitation, saveMenuCategory, saveMenuItem, saveRestaurantTable, saveSeat, updateManagerInvitation, type OwnerWorkspaceData } from '../lib/data-services'
 import { EmptyState } from './StatePage'
 import './OwnerWorkspaceSection.css'
 
@@ -42,18 +42,93 @@ export default function OwnerWorkspaceSection() {
 }
 
 function OwnerSectionContent({ data, section, onSaved }: { data: OwnerWorkspaceData; section: string; onSaved: () => void }) {
-  const { restaurant, orders, payments, invitations, roles, subscription } = data
+  const { restaurant, orders, payments, subscription } = data
   const currency = restaurant.currency
   const heading = titleFromPath(`/owner/${section}`)
   if (section === 'orders') return <Section title={heading} description="Review recent customer orders and their current service status."><DataTable headers={['Reference', 'Type', 'Customer', 'Status', 'Total']} rows={orders.map((order) => [order.order_reference, order.order_type, order.customer_name ?? 'Walk-in', order.status, money(order.total, currency)])} empty="No orders have been placed yet." /></Section>
   if (section === 'menu') return <Section title={heading} description="Create categories and manage every menu item component."><MenuManager data={data} currency={currency} onSaved={onSaved} /></Section>
   if (section === 'tables') return <Section title={heading} description="Create tables and add seats for dine-in ordering."><TableManager data={data} onSaved={onSaved} /></Section>
-  if (section === 'staff') return <Section title={heading} description="Review manager invitations and restaurant roles."><div className="owner-stat-grid"><Stat label="Invitations" value={invitations.length} /><Stat label="Roles" value={roles.length} /><Stat label="Pending" value={invitations.filter((invite) => invite.status === 'PENDING').length} /></div><DataTable headers={['Name', 'Email', 'Preset', 'Status']} rows={invitations.map((invite) => [invite.full_name, invite.email, invite.preset, invite.status])} empty="No manager invitations yet." /></Section>
+  if (section === 'staff') return <Section title={heading} description="Invite staff by email, edit pending invitations, and remove restaurant access."><StaffManager data={data} onSaved={onSaved} /></Section>
   if (section === 'payments') return <Section title={heading} description="Review restaurant payment records separately from platform subscription billing."><DataTable headers={['Order', 'Method', 'Amount', 'Status', 'Recorded']} rows={payments.map((payment) => [orders.find((order) => order.id === payment.order_id)?.order_reference ?? 'Unknown order', payment.method, money(payment.amount, currency), payment.status, new Date(payment.created_at).toLocaleDateString()])} empty="No restaurant payments recorded yet." /></Section>
-  if (section === 'reports') { const completed = orders.filter((order) => ['SERVED', 'COLLECTED'].includes(order.status)); return <Section title={heading} description="Sales figures are calculated from the tenant order ledger."><div className="owner-stat-grid"><Stat label="Orders" value={completed.length} /><Stat label="Gross sales" value={money(completed.reduce((sum, order) => sum + order.total, 0), currency)} /><Stat label="Average order" value={money(completed.length ? completed.reduce((sum, order) => sum + order.total, 0) / completed.length : 0, currency)} /></div></Section> }
+  if (section === 'reports') return <Section title={heading} description="Analyze completed sales and download the underlying order ledger for spreadsheets."><ReportManager orders={orders} currency={currency} restaurantName={restaurant.name} /></Section>
   if (section === 'billing') return <Section title={heading} description="Subscription charges are separate from customer meal payments."><div className="owner-detail-card"><strong>{subscription ? 'Subscription active' : 'No subscription configured'}</strong><p>{subscription ? `Status: ${subscription.status}. Billing period ends ${subscription.current_period_end ? new Date(subscription.current_period_end).toLocaleDateString() : 'not set'}.` : 'Contact your platform administrator to configure a plan.'}</p></div></Section>
   if (section === 'settings') return <Section title={heading} description="Current tenant profile and public ordering identity."><div className="owner-detail-card"><strong>{restaurant.name}</strong><p>Public slug: {restaurant.public_slug}</p><p>Phone: {restaurant.phone ?? 'Not set'}</p><p>Address: {restaurant.address ?? 'Not set'}</p><p>Status: {restaurant.status}</p></div></Section>
   return <Section title={heading} description="This owner workspace section is ready for its next workflow module." />
+}
+
+function ReportManager({ orders, currency, restaurantName }: { orders: OwnerWorkspaceData['orders']; currency: string; restaurantName: string }) {
+  const completed = orders.filter((order) => ['SERVED', 'COLLECTED'].includes(order.status))
+  const daily = new Map<string, { orders: number; sales: number }>()
+  completed.forEach((order) => {
+    const day = order.created_at.slice(0, 10)
+    const current = daily.get(day) ?? { orders: 0, sales: 0 }
+    daily.set(day, { orders: current.orders + 1, sales: current.sales + order.total })
+  })
+  const trend = [...daily.entries()].sort(([a], [b]) => a.localeCompare(b)).slice(-14)
+  const maxSales = Math.max(...trend.map(([, value]) => value.sales), 1)
+  const statusCounts = new Map<string, number>()
+  orders.forEach((order) => statusCounts.set(order.status, (statusCounts.get(order.status) ?? 0) + 1))
+  const downloadCsv = () => {
+    const escape = (value: string | number) => `"${String(value).replaceAll('"', '""')}"`
+    const rows = [
+      ['Order reference', 'Created at', 'Order type', 'Customer', 'Status', 'Subtotal', 'Total', 'Currency'],
+      ...orders.map((order) => [order.order_reference, order.created_at, order.order_type, order.customer_name ?? '', order.status, order.subtotal, order.total, currency]),
+    ]
+    const csv = rows.map((row) => row.map(escape).join(',')).join('\r\n')
+    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }))
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `${restaurantName.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-sales-report.csv`
+    link.click()
+    URL.revokeObjectURL(url)
+  }
+  return <div className="owner-report">
+    <div className="owner-report-actions"><button type="button" onClick={downloadCsv}>Download CSV</button><span>{orders.length} orders included · completed sales drive the chart</span></div>
+    <div className="owner-stat-grid"><Stat label="Completed orders" value={completed.length} /><Stat label="Gross sales" value={money(completed.reduce((sum, order) => sum + order.total, 0), currency)} /><Stat label="Average order" value={money(completed.length ? completed.reduce((sum, order) => sum + order.total, 0) / completed.length : 0, currency)} /></div>
+    <div className="owner-report-card"><h2>Daily sales trend</h2>{trend.length ? <div className="sales-chart" aria-label="Daily completed sales chart">{trend.map(([day, value]) => <div className="sales-chart-column" key={day}><span className="sales-chart-value">{money(value.sales, currency)}</span><div className="sales-chart-bar" style={{ height: `${Math.max((value.sales / maxSales) * 170, 6)}px` }} /><small>{day.slice(5)}</small><em>{value.orders} order{value.orders === 1 ? '' : 's'}</em></div>)}</div> : <EmptyState title="No completed sales yet" message="Completed orders will appear here as sales are served or collected." />}</div>
+    <div className="owner-report-card"><h2>Order status breakdown</h2><div className="report-status-grid">{[...statusCounts.entries()].map(([status, count]) => <div key={status}><strong>{count}</strong><span>{status.replaceAll('_', ' ')}</span></div>)}</div></div>
+  </div>
+}
+
+type ManagerPreset = 'FLOOR_MANAGER' | 'SHIFT_LEAD' | 'SENIOR_MANAGER'
+
+function StaffManager({ data, onSaved }: { data: OwnerWorkspaceData; onSaved: () => void }) {
+  const [name, setName] = useState('')
+  const [email, setEmail] = useState('')
+  const [preset, setPreset] = useState<ManagerPreset>('FLOOR_MANAGER')
+  const [editingId, setEditingId] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const submit = async (event: FormEvent) => {
+    event.preventDefault()
+    setSaving(true); setError(null)
+    try {
+      if (editingId) {
+        await updateManagerInvitation(editingId, name.trim(), preset)
+      } else {
+        await inviteManager({ restaurantId: data.restaurant.id, email: email.trim(), fullName: name.trim(), preset })
+      }
+      setName(''); setEmail(''); setPreset('FLOOR_MANAGER'); setEditingId(''); onSaved()
+    } catch (reason) { setError(reason instanceof Error ? reason.message : 'Unable to save staff member.') } finally { setSaving(false) }
+  }
+  const edit = (invitation: OwnerWorkspaceData['invitations'][number]) => {
+    if (invitation.status !== 'PENDING') return
+    setEditingId(invitation.id); setName(invitation.full_name); setEmail(invitation.email); setPreset(invitation.preset as ManagerPreset)
+  }
+  const revoke = async (id: string) => {
+    setSaving(true); setError(null)
+    try { await revokeManagerInvitation(id); onSaved() } catch (reason) { setError(reason instanceof Error ? reason.message : 'Unable to revoke invitation.') } finally { setSaving(false) }
+  }
+  const remove = async (userId: string) => {
+    if (!window.confirm('Remove this staff member from the restaurant?')) return
+    setSaving(true); setError(null)
+    try { await removeManagerAccess(userId); onSaved() } catch (reason) { setError(reason instanceof Error ? reason.message : 'Unable to remove staff access.') } finally { setSaving(false) }
+  }
+  return <div className="owner-manager">
+    {error && <div className="owner-form-error">{error}</div>}
+    <form className="owner-form-card" onSubmit={submit}><h2>{editingId ? 'Edit pending invitation' : 'Invite staff member'}</h2><div className="owner-form-grid"><label>Full name<input required value={name} onChange={(event) => setName(event.target.value)} /></label><label>Email<input required disabled={Boolean(editingId)} type="email" value={email} onChange={(event) => setEmail(event.target.value)} /></label></div><label>Permission preset<select value={preset} onChange={(event) => setPreset(event.target.value as ManagerPreset)}><option value="FLOOR_MANAGER">Floor manager</option><option value="SHIFT_LEAD">Shift lead</option><option value="SENIOR_MANAGER">Senior manager</option></select></label><div className="owner-form-actions"><button type="submit" disabled={saving}>{saving ? 'Saving…' : editingId ? 'Save invitation' : 'Send email invitation'}</button>{editingId && <button type="button" className="owner-secondary-button" onClick={() => { setEditingId(''); setName(''); setEmail(''); setPreset('FLOOR_MANAGER') }}>Cancel</button>}</div>{!editingId && <small>The staff member receives a secure sign-in invitation by email and completes account setup through Supabase Auth.</small>}</form>
+    <div className="owner-manager-list"><h2>Staff and invitations</h2>{data.invitations.length ? data.invitations.map((invitation) => <div className="owner-list-row" key={invitation.id}><span><strong>{invitation.full_name}</strong><small>{invitation.email} · {invitation.preset} · {invitation.status}{invitation.invited_user_id ? ` · User ${invitation.invited_user_id.slice(0, 8)}` : ''}</small></span><div className="owner-row-actions">{invitation.status === 'PENDING' && <><button type="button" className="owner-secondary-button" onClick={() => edit(invitation)}>Edit</button><button type="button" className="owner-secondary-button" disabled={saving} onClick={() => revoke(invitation.id)}>Revoke</button></>}{invitation.status === 'ACCEPTED' && invitation.invited_user_id && <button type="button" className="owner-secondary-button" disabled={saving} onClick={() => remove(invitation.invited_user_id as string)}>Remove access</button>}</div></div>) : <EmptyState title="No staff yet" message="Invite a manager to start building your restaurant team." />}</div>
+  </div>
 }
 
 function MenuManager({ data, currency, onSaved }: { data: OwnerWorkspaceData; currency: string; onSaved: () => void }) {

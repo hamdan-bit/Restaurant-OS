@@ -1223,6 +1223,18 @@ export type Database = {
         Args: { invitation_id: string }
         Returns: undefined
       }
+      remove_manager_access: {
+        Args: { target_user_id: string }
+        Returns: undefined
+      }
+      update_manager_invitation: {
+        Args: {
+          invitation_id: string
+          manager_name: string
+          manager_preset: string
+        }
+        Returns: undefined
+      }
       submit_registration_application: {
         Args: { application_id: string }
         Returns: undefined

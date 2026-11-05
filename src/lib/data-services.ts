@@ -437,6 +437,26 @@ export async function revokeManagerInvitation(invitationId: string) {
   if (error) throw new Error(error.message)
 }
 
+export async function updateManagerInvitation(
+  invitationId: string,
+  name: string,
+  preset: string,
+) {
+  const { error } = await supabase.rpc('update_manager_invitation', {
+    invitation_id: invitationId,
+    manager_name: name,
+    manager_preset: preset,
+  })
+  if (error) throw new Error(error.message)
+}
+
+export async function removeManagerAccess(userId: string) {
+  const { error } = await supabase.rpc('remove_manager_access', {
+    target_user_id: userId,
+  })
+  if (error) throw new Error(error.message)
+}
+
 export async function getPublishedMenu(
   restaurantSlug: string,
 ): Promise<MenuItem[]> {
