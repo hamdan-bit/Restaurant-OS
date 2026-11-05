@@ -67,7 +67,6 @@ export default function AppShell({
   workspaceLocation?: string
   children: ReactNode
 }) {
-  const [mobileOpen, setMobileOpen] = useState(false)
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     const stored = window.localStorage.getItem('fairprice-theme')
     return stored === 'dark' ? 'dark' : 'light'
@@ -93,15 +92,9 @@ export default function AppShell({
 
   return (
     <div className="app-shell">
-      {mobileOpen && (
-        <button
-          className="shell-scrim"
-          onClick={() => setMobileOpen(false)}
-          aria-label="Close navigation"
-        />
-      )}
-      <aside className={`app-sidebar ${mobileOpen ? 'is-open' : ''}`}>
-        <div className="shell-brand">
+      <header className="shell-header">
+        <div className="shell-header-row">
+          <div className="shell-brand">
           <Link to={role === 'platform' ? '/platform' : `/${role}`}>
             <span className="brand-mark">F</span>
             <span>
@@ -109,76 +102,42 @@ export default function AppShell({
               <small>Restaurant OS</small>
             </span>
           </Link>
-          <button
-            className="sidebar-close"
-            onClick={() => setMobileOpen(false)}
-            aria-label="Close navigation"
-          >
-            ×
-          </button>
-        </div>
-
-        {role !== 'platform' && (
-          <div className="workspace-switcher">
-            <span className="workspace-avatar">{workspaceName.slice(0, 2).toUpperCase()}</span>
-            <span>
-              <strong>{workspaceName}</strong>
-              <small>{workspaceLocation}</small>
+          </div>
+          {role !== 'platform' && (
+            <div className="workspace-switcher">
+              <span className="workspace-avatar">{workspaceName.slice(0, 2).toUpperCase()}</span>
+              <span>
+                <strong>{workspaceName}</strong>
+                <small>{workspaceLocation}</small>
+              </span>
+            </div>
+          )}
+          <div className="shell-user">
+            <span className="user-avatar">{initials(user?.email)}</span>
+            <span className="shell-user-details">
+              <strong>{user?.email ?? 'Signed-in user'}</strong>
+              <small>{roleLabels[role]}</small>
             </span>
           </div>
-        )}
-
-        <p className="nav-caption">
-          {role === 'platform' ? 'Platform operations' : 'Workspace'}
-        </p>
-        <nav className="shell-nav" aria-label={`${roleLabels[role]} navigation`}>
-          {nav.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              end={item.to === `/${role}`}
-              onClick={() => setMobileOpen(false)}
-            >
-              <span className="nav-dot" />
-              {item.label}
-            </NavLink>
-          ))}
-        </nav>
-
-        <div className="shell-user">
-          <span className="user-avatar">{initials(user?.email)}</span>
-          <span>
-            <strong>{user?.email ?? 'Signed-in user'}</strong>
-            <small>{roleLabels[role]}</small>
-          </span>
-        </div>
-      </aside>
-
-      <div className="shell-main">
-        <header className="shell-topbar">
-          <button
-            className="menu-toggle"
-            onClick={() => setMobileOpen(true)}
-            aria-label="Open navigation"
-          >
-            ☰
-          </button>
-          <span className="topbar-context">
-            {role === 'platform' ? 'FairPrice Platform' : workspaceName}
-          </span>
           <div className="topbar-actions">
-            <button className="topbar-account" onClick={toggleTheme} aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}>
+            <button className="topbar-account" onClick={toggleTheme}>
               {theme === 'light' ? 'Dark mode' : 'Light mode'}
             </button>
             <button className="topbar-icon" aria-label="Notifications">
-              <span className="notification-dot" />
-              ♢
+              <span className="notification-dot" />♢
             </button>
-            <button className="topbar-account" onClick={handleSignOut}>
-              Sign out
-            </button>
+            <button className="topbar-account" onClick={handleSignOut}>Sign out</button>
           </div>
-        </header>
+        </div>
+        <nav className="shell-nav" aria-label={`${roleLabels[role]} navigation`}>
+          {nav.map((item) => (
+            <NavLink key={item.to} to={item.to} end={item.to === `/${role}`}>
+              <span className="nav-label">{item.label}</span>
+            </NavLink>
+          ))}
+        </nav>
+      </header>
+      <div className="shell-main">
         <main className="shell-content">{children}</main>
       </div>
     </div>
