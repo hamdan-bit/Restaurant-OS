@@ -198,6 +198,8 @@
   gap: 18px;
 }
 
+.shell-search{display:flex;align-items:center;gap:8px;flex:1;max-width:430px;margin:0 auto;padding:7px 12px;border:1px solid rgba(111,195,157,.25);border-radius:999px;background:rgba(6,26,21,.58);color:#9eb0a9}.shell-search span{font-size:18px}.shell-search input{min-width:0;flex:1;border:0;outline:0;background:transparent;color:#fff;font:11px 'DM Sans'}.shell-search input::placeholder{color:#8fa39b}.shell-search kbd{padding:2px 6px;border:1px solid rgba(255,255,255,.15);border-radius:4px;color:#8fa39b;font-size:9px}
+
 .shell-header .shell-brand {
   flex: 0 0 auto;
 }
@@ -220,7 +222,12 @@
   margin: 0 0 0 auto;
   padding: 0 0 0 18px;
   border: 0;
+  background: transparent;
+  color: #fff;
+  cursor: pointer;
+  text-align: left;
 }
+.shell-user-menu{position:relative}.shell-user-details small{display:flex;align-items:center;gap:5px}.shell-user-details i,.system-status i{display:inline-block;width:6px;height:6px;border-radius:50%;background:#ebb44e}.profile-chevron{margin-left:5px;color:#b7c8c0}.profile-menu{position:absolute;right:0;top:calc(100% + 10px);z-index:30;display:grid;min-width:190px;gap:6px;padding:14px;border:1px solid rgba(255,255,255,.14);border-radius:9px;background:#0e2b23;box-shadow:0 12px 25px rgba(0,0,0,.2);color:#fff;font-size:11px}.profile-menu span{color:#a7bbb2;font-size:10px}.profile-menu button{margin-top:5px;padding:7px;border:1px solid rgba(255,255,255,.14);border-radius:6px;background:rgba(255,255,255,.07);color:#fff;cursor:pointer}.system-status{display:inline-flex;align-items:center;gap:6px;padding:7px 10px;border:1px solid rgba(111,195,157,.25);border-radius:999px;background:#123d32;color:#dce7e2;font-size:10px}.system-status i{background:#54c485}.topbar-icon b{position:absolute;top:-5px;right:-5px;min-width:15px;height:15px;padding:0 3px;border-radius:99px;background:#ebb44e;color:#17231f;font-size:9px}.notification-button{position:relative}.notification-icon{width:16px;height:16px;fill:none;stroke:currentColor;stroke-linecap:round;stroke-linejoin:round;stroke-width:1.8}
 
 .shell-user-details { white-space: nowrap; }
 .shell-header .shell-nav {
@@ -237,6 +244,8 @@
   scrollbar-width: none;
   -ms-overflow-style: none;
 }
+.shell-header .nav-group{display:contents}.shell-header .nav-group + .nav-group a:first-child{border-left:1px solid rgba(255,255,255,.14);padding-left:20px}.shell-header .shell-nav a{position:relative;flex:1 1 0;min-width:0}
+.nav-badge{margin-left:3px;padding:1px 4px;border-radius:99px;background:#ebb44e;color:#17231f;font-size:8px}
 
 .shell-header .shell-nav::-webkit-scrollbar { display: none; }
 .shell-header .shell-nav a {
@@ -270,4 +279,5 @@
   .shell-header .shell-user { margin-left: auto; padding-left: 0; }
   .shell-header .workspace-switcher { max-width: 190px; overflow: hidden; }
   .shell-header .shell-nav { padding: 8px 14px; }
+  .shell-search{order:3;flex-basis:100%;max-width:none}.shell-header-row{padding-bottom:10px}.shell-header .nav-group{display:contents}.shell-header .nav-group + .nav-group a:first-child{padding-left:12px}
 }
