@@ -11,6 +11,7 @@ export default function Signup() {
   const [publicSlug, setPublicSlug] = useState('')
   const [ownerName, setOwnerName] = useState('')
   const [contactPhone, setContactPhone] = useState('')
+  const [acceptedTerms, setAcceptedTerms] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -22,6 +23,10 @@ export default function Signup() {
 
     if (password !== confirmPassword) {
       setError('Passwords do not match')
+      return
+    }
+    if (!acceptedTerms) {
+      setError('Please agree to the Terms of Service and Privacy Policy to continue')
       return
     }
 
@@ -117,6 +122,11 @@ export default function Signup() {
             minLength={6}
             autoComplete="new-password"
           />
+
+          <label className="auth-checkbox">
+            <input type="checkbox" checked={acceptedTerms} onChange={(e) => setAcceptedTerms(e.target.checked)} required />
+            <span>I agree to the Terms of Service and Privacy Policy.</span>
+          </label>
 
           <button type="submit" className="auth-button" disabled={loading}>
             {loading ? 'Creating registration…' : 'Create restaurant account'}

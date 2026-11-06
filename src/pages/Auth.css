@@ -72,6 +72,8 @@
   opacity: 0.5;
 }
 
+.auth-form .auth-checkbox{display:flex;flex-direction:row;align-items:flex-start;gap:9px;margin-top:12px;color:var(--text);font-size:12px;line-height:1.5}.auth-checkbox input{width:15px;height:15px;margin-top:2px;accent-color:var(--accent)}.auth-checkbox a{color:var(--accent);text-decoration:none}.auth-checkbox a:hover{text-decoration:underline}
+
 .auth-button {
   margin-top: 16px;
   padding: 12px;
@@ -118,4 +120,3 @@
   justify-content: center;
   color: var(--text);
 }
-

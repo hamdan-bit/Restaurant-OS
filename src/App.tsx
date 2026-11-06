@@ -1,4 +1,4 @@
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
+import { BrowserRouter, Route, Routes } from 'react-router-dom'
 import { AuthProvider } from './contexts/AuthContext'
 import ProtectedRoute from './components/ProtectedRoute'
 import PublicOnlyRoute from './components/PublicOnlyRoute'
@@ -19,6 +19,7 @@ import PlatformConsole from './pages/PlatformConsole'
 import WorkspaceAccessRoute from './components/WorkspaceAccessRoute'
 import RegistrationPage from './pages/RegistrationPage'
 import OwnerWorkspaceSection from './pages/OwnerWorkspaceSection'
+import Landing from './pages/Landing'
 import './index.css'
 
 function App() {
@@ -28,6 +29,7 @@ function App() {
         <Routes>
           <Route path="/r/:restaurantSlug/*" element={<PublicOrderingRoutes />} />
           <Route element={<PublicOnlyRoute />}>
+            <Route path="/" element={<Landing />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
           </Route>
@@ -88,7 +90,6 @@ function App() {
             <Route path="/session-expired" element={<SessionExpiredPage />} />
           </Route>
 
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </AuthProvider>
