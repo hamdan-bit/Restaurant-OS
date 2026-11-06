@@ -12,7 +12,6 @@ export default function Landing() {
     <main className="landing-page">
       <nav className="landing-nav">
         <Link className="landing-brand" to="/">
-          <span className="landing-mark">F</span>
           <span>FairPrice <em>Restaurant OS</em></span>
         </Link>
         <div className="landing-nav-actions">
