@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import './Landing.css'
 
@@ -7,7 +8,23 @@ const highlights = [
   ['03', 'Ready for your guests', 'Turn every table into a polished digital ordering experience with QR-powered menus.'],
 ]
 
+function getPreviewRestaurantName() {
+  const draft = window.localStorage.getItem('fairprice-registration-draft')
+  if (!draft) return 'your restaurant'
+
+  try {
+    const parsed = JSON.parse(draft) as { business_name?: unknown }
+    return typeof parsed.business_name === 'string' && parsed.business_name.trim()
+      ? parsed.business_name.trim()
+      : 'your restaurant'
+  } catch {
+    return 'your restaurant'
+  }
+}
+
 export default function Landing() {
+  const [previewRestaurantName] = useState(getPreviewRestaurantName)
+
   return (
     <main className="landing-page">
       <nav className="landing-nav">
@@ -38,7 +55,7 @@ export default function Landing() {
           <div className="landing-glow" />
           <div className="landing-dashboard-card">
             <div className="preview-top"><span className="preview-logo">fairprice</span><span className="preview-status"><i /> Live service</span></div>
-            <div className="preview-heading"><span>Good evening, Manzi Foods</span><strong>Today’s overview</strong></div>
+            <div className="preview-heading"><span>Good evening, {previewRestaurantName}</span><strong>Today’s overview</strong></div>
             <div className="preview-metrics"><span><small>Revenue today</small><strong>$4,284</strong><em>+18.4%</em></span><span><small>Orders</small><strong>128</strong><em>+12.8%</em></span></div>
             <div className="preview-chart"><span /><span /><span /><span /><span /><span /><span /></div>
             <div className="preview-footer"><span>Service performance</span><b>Excellent</b></div>
