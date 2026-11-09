@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react'
-import { Link, NavLink, useNavigate } from 'react-router-dom'
+import { Link, NavLink } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { listMyRestaurants } from '../lib/data-services'
 import { supabase } from '../lib/supabase'
@@ -96,7 +96,6 @@ export default function AppShell({
   const [profileOpen, setProfileOpen] = useState(false)
   const [actionCount, setActionCount] = useState(0)
   const { user, signOut } = useAuth()
-  const navigate = useNavigate()
   useEffect(() => {
     document.documentElement.dataset.theme = theme
   }, [theme])
@@ -127,7 +126,7 @@ export default function AppShell({
 
   const handleSignOut = async () => {
     await signOut()
-    navigate('/login', { replace: true })
+    window.location.replace('/')
   }
 
   const toggleTheme = () => {
